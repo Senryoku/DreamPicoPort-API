@@ -41,6 +41,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            ninja-build \
             libudev-dev
 
       - name: Configure CMake
