@@ -63,4 +63,4 @@ jobs:
           name: libdream_pico_port-${{ matrix.target }}
           path: |
             build/ext/libusb-cmake/libusb-1.0.a
-            build/ext/src/libdream_pico_port_api.a
+            build/src/libdream_pico_port_api.a
