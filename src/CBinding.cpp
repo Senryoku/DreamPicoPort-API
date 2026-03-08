@@ -1,6 +1,4 @@
 #include <DreamPicoPortApi.hpp>
-#include <bit>
-#include <cstring>
 
 std::shared_ptr<dpp_api::DppDevice> dppDevice = nullptr;
 
