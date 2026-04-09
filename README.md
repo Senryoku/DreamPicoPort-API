@@ -41,3 +41,10 @@ Execute the following to compile using cmake.
 cmake --no-warn-unused-cli -S. -B./build
 cmake --build ./build --config Release -j 10
 ```
+
+### This fork / C Bindings for Zig
+
+```bash
+cmake -DTARGET=x86_64-windows-gnu -DCMAKE_TOOLCHAIN_FILE="zig-toolchain.cmake" -DCMAKE_BUILD_TYPE=Release -G Ninja -B ./build
+cmake --build ./build --config Release -j 10
+```
