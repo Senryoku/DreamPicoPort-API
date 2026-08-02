@@ -320,6 +320,21 @@ DppDevice::DppDevice(std::unique_ptr<DppDeviceImp>&& dev) : mImp(std::move(dev))
 DppDevice::~DppDevice()
 {}
 
+std::unique_ptr<DppDevice> DppDevice::make(std::unique_ptr<DppDeviceImp>&& dppDeviceImp)
+{
+    if (!dppDeviceImp)
+    {
+        return nullptr;
+    }
+
+    struct DppDeviceFactory : public DppDevice
+    {
+        DppDeviceFactory(std::unique_ptr<class DppDeviceImp>&& dev) : DppDevice(std::move(dev)) {}
+    };
+
+    return std::make_unique<DppDeviceFactory>(std::move(dppDeviceImp));
+}
+
 std::unique_ptr<DppDevice> DppDevice::find(const Filter& filter)
 {
     std::unique_ptr<DppDeviceImp> dppDeviceImp;
@@ -332,17 +347,20 @@ std::unique_ptr<DppDevice> DppDevice::find(const Filter& filter)
     return nullptr;
 #endif
 
-    if (!dppDeviceImp)
-    {
-        return nullptr;
-    }
+    return make(std::move(dppDeviceImp));
+}
 
-    struct DppDeviceFactory : public DppDevice
-    {
-        DppDeviceFactory(std::unique_ptr<class DppDeviceImp>&& dev) : DppDevice(std::move(dev)) {}
-    };
+std::unique_ptr<DppDevice> DppDevice::open(intptr_t fd)
+{
+    std::unique_ptr<DppDeviceImp> dppDeviceImp;
 
-    return std::make_unique<DppDeviceFactory>(std::move(dppDeviceImp));
+#ifndef DREAMPICOPORT_NO_LIBUSB
+    dppDeviceImp = DppLibusbDeviceImp::open(fd);
+#else
+    return nullptr;
+#endif
+
+    return make(std::move(dppDeviceImp));
 }
 
 std::uint32_t DppDevice::getCount(const Filter& filter)

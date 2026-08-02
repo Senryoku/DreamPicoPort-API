@@ -382,6 +382,11 @@ private:
     //! @param dev Pointer to internal implementation
     DppDevice(std::unique_ptr<class DppDeviceImp>&& dev);
 
+    //! Creates a new unique pointer
+    //! @param dppDeviceImp Pointer to internal implementation
+    //! @return a new DppDevice
+    static std::unique_ptr<DppDevice> make(std::unique_ptr<class DppDeviceImp>&& dppDeviceImp);
+
 public:
     //! Destructor
     //! NOTICE: DppDevice may not be destructed from any callback
@@ -413,6 +418,12 @@ public:
     //! @return pointer to the located device if found
     //! @return nullptr otherwise
     static std::unique_ptr<DppDevice> find(const Filter& filter);
+
+    //! Open a DreamPicoPort device using a file descriptor (mostly for Android use)
+    //! @param[in] fd The file descriptor or pointer to access the USB device
+    //! @return pointer to a new device if one could be created using fd
+    //! @return nullptr otherwise (always returns nullptr for WinRT implementation)
+    static std::unique_ptr<DppDevice> open(intptr_t fd);
 
     //! @param[in] filter The filter parameters (idx is ignored)
     //! @return the number of DreamPicoPort devices

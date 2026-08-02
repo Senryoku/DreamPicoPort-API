@@ -90,20 +90,19 @@ LibusbDeviceList::iterator LibusbDeviceList::end() const
     return iterator(mLibusbDeviceList.get(), mCount);
 }
 
-std::unique_ptr<libusb_context, LibusbContextDeleter> make_libusb_context()
+std::unique_ptr<libusb_context, LibusbContextDeleter> make_libusb_context(
+    std::initializer_list<libusb_init_option> options
+)
 {
-    std::unique_ptr<libusb_context, LibusbContextDeleter> libusbContext;
-
+    libusb_context *ctx = nullptr;
+    const libusb_init_option* opts = (options.size() > 0) ? options.begin() : nullptr;
+    int r = libusb_init_context(&ctx, opts, static_cast<int>(options.size()));
+    if (r < 0)
     {
-        libusb_context *ctx = nullptr;
-        int r = libusb_init(&ctx);
-        if (r < 0)
-        {
-            return nullptr;
-        }
-        libusbContext.reset(ctx);
+        return nullptr;
     }
-    return libusbContext;
+
+    return std::unique_ptr<libusb_context, LibusbContextDeleter>(ctx);
 }
 
 //! @return a new unique_pointer to a libusb_device_handle
@@ -902,6 +901,11 @@ std::unique_ptr<DppLibusbDeviceImp> DppLibusbDeviceImp::find(const DppDevice::Fi
 {
     std::unique_ptr<libusb_context, LibusbContextDeleter> libusbContext = make_libusb_context();
 
+    if (!libusbContext)
+    {
+        return nullptr;
+    }
+
     FindResult foundDevice = find_dpp_device(libusbContext, filter);
     if (!foundDevice.desc || !foundDevice.devHandle)
     {
@@ -916,9 +920,79 @@ std::unique_ptr<DppLibusbDeviceImp> DppLibusbDeviceImp::find(const DppDevice::Fi
     );
 }
 
+std::unique_ptr<DppLibusbDeviceImp> DppLibusbDeviceImp::open(intptr_t fd)
+{
+    // Disable discovery in order to allow context to be created on Android
+    std::unique_ptr<libusb_context, LibusbContextDeleter> libusbContext = make_libusb_context(
+        {{LIBUSB_OPTION_NO_DEVICE_DISCOVERY}}
+    );
+
+    if (!libusbContext)
+    {
+        return nullptr;
+    }
+
+    std::unique_ptr<libusb_device_handle, LibusbDeviceHandleDeleter> deviceHandle;
+
+    {
+        libusb_device_handle *handle;
+        int r = libusb_wrap_sys_device(libusbContext.get(), fd, &handle);
+
+        if (r < 0)
+        {
+            return nullptr;
+        }
+
+        deviceHandle.reset(handle);
+    }
+
+    std::unique_ptr<libusb_device_descriptor> desc = std::make_unique<libusb_device_descriptor>(libusb_device_descriptor{});
+
+    libusb_device* dev = libusb_get_device(deviceHandle.get());
+    if (!dev)
+    {
+        return nullptr;
+    }
+
+    int r = libusb_get_device_descriptor(dev, desc.get());
+    if (r < 0)
+    {
+        return nullptr;
+    }
+
+    unsigned char serial[256] = {};
+    int serialLen = 0;
+
+    if (desc->iSerialNumber > 0) {
+        int serialLen = libusb_get_string_descriptor_ascii(
+            deviceHandle.get(),
+            desc->iSerialNumber,
+            serial,
+            sizeof(serial)
+        );
+    }
+
+    std::string serialStr;
+    if (serialLen > 0) {
+        serialStr.assign(reinterpret_cast<const char*>(serial), static_cast<std::size_t>(serialLen));
+    }
+
+    return std::make_unique<DppLibusbDeviceImp>(
+        serialStr,
+        std::move(desc),
+        std::move(libusbContext),
+        std::move(deviceHandle)
+    );
+}
+
 std::uint32_t DppLibusbDeviceImp::getCount(const DppDevice::Filter& filter)
 {
     std::unique_ptr<libusb_context, LibusbContextDeleter> libusbContext = make_libusb_context();
+
+    if (!libusbContext)
+    {
+        return 0;
+    }
 
     DppDevice::Filter filterCpy = filter;
     filterCpy.idx = (std::numeric_limits<std::int32_t>::max)();

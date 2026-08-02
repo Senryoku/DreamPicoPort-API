@@ -38,6 +38,7 @@
 #include <functional>
 #include <algorithm>
 #include <unordered_map>
+#include <initializer_list>
 
 namespace dpp_api
 {
@@ -158,8 +159,12 @@ private:
     std::unique_ptr<libusb_device*, LibusbDeviceListDeleter> mLibusbDeviceList;
 };
 
+//! Create a new libusb_context
+//! @param[in] options The options to pass to the new context
 //! @return a new unique_pointer to a libusb_context
-std::unique_ptr<libusb_context, LibusbContextDeleter> make_libusb_context();
+std::unique_ptr<libusb_context, LibusbContextDeleter> make_libusb_context(
+    std::initializer_list<libusb_init_option> options = {}
+);
 
 //! @return a new unique_pointer to a libusb_device_handle
 std::unique_ptr<libusb_device_handle, LibusbDeviceHandleDeleter> make_libusb_device_handle(libusb_device* dev);
@@ -305,6 +310,12 @@ public:
     //! @return pointer to the located device if found
     //! @return nullptr otherwise
     static std::unique_ptr<DppLibusbDeviceImp> find(const DppDevice::Filter& filter);
+
+    //! Open a DreamPicoPort device using a file descriptor (mostly for Android use)
+    //! @param[in] fd The file descriptor or pointer to access the USB device
+    //! @return pointer to a new device if one could be created using fd
+    //! @return nullptr otherwise
+    static std::unique_ptr<DppLibusbDeviceImp> open(intptr_t fd);
 
     //! @param[in] filter The filter parameters (idx is ignored)
     //! @return the number of DreamPicoPort devices
