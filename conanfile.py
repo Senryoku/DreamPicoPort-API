@@ -7,7 +7,7 @@ import time
 
 class DreamPicoPortConan(ConanFile):
     name = "dream_pico_port_api"
-    version = "1.1.0"
+    version = "1.1.1"
     package_type = "library"
     license = "MIT"
     author = "James M Smith"
@@ -36,7 +36,7 @@ class DreamPicoPortConan(ConanFile):
 
     def requirements(self):
         if self.options.get_safe("with_libusb", True):
-            self.requires("libusb/[>=1.0.26 <2.0.0]")
+            self.requires("libusb/[>=1.0.27 <2.0.0]")
 
     def config_options(self):
         if self.settings.os == "Windows":

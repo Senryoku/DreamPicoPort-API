@@ -964,7 +964,7 @@ std::unique_ptr<DppLibusbDeviceImp> DppLibusbDeviceImp::open(intptr_t fd)
     int serialLen = 0;
 
     if (desc->iSerialNumber > 0) {
-        int serialLen = libusb_get_string_descriptor_ascii(
+        serialLen = libusb_get_string_descriptor_ascii(
             deviceHandle.get(),
             desc->iSerialNumber,
             serial,
